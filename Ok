@@ -1,0 +1,50 @@
+-- [[ RED IMMORTAL SCRIPT ]] --
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local mouse = player:GetMouse()
+
+-- 1. ระบบอมตะ (God Mode) และเกราะสีแดง
+local function makeImmortal()
+    if character:FindFirstChild("Humanoid") then
+        -- ทำให้เลือดไม่ลด
+        character.Humanoid.MaxHealth = math.huge
+        character.Humanoid.Health = math.huge
+        
+        -- สร้างเอฟเฟกต์เกราะสีแดงรอบตัว
+        local forcefield = Instance.new("ForceField")
+        forcefield.Visible = true
+        forcefield.Parent = character
+        -- หมายเหตุ: ForceField ปกติจะเปลี่ยนสีลำบาก 
+        -- แนะนำให้สร้าง Part ทรงกลมสีแดงโปร่งแสงครอบตัวแทนถ้าต้องการความเท่
+    end
+end
+
+-- 2. ระบบยิงเป็นแสงสีแดง (Visual Tracer)
+mouse.Button1Down:Connect(function()
+    local tool = character:FindFirstChildOfClass("Tool")
+    if tool then
+        -- สร้างเส้นแสงสีแดงจากปืน
+        local beam = Instance.new("Part")
+        beam.Name = "RedLaser"
+        beam.Color = Color3.fromRGB(255, 0, 0) -- สีแดงสด
+        beam.Material = Enum.Material.Neon
+        beam.Anchored = true
+        beam.CanCollide = false
+        
+        -- คำนวณตำแหน่งเส้นแสง (จากปลายปืนไปที่จุดที่เมาส์ชี้)
+        local startPos = tool.Handle.Position
+        local endPos = mouse.Hit.p
+        local distance = (startPos - endPos).Magnitude
+        
+        beam.Size = Vector3.new(0.2, 0.2, distance)
+        beam.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0, 0, -distance/2)
+        beam.Parent = game.Workspace
+        
+        -- ให้แสงหายไปใน 0.1 วินาที (เหมือนกระสุนวิ่ง)
+        game.Debris:AddItem(beam, 0.1)
+    end
+end)
+
+-- รันระบบอมตะทันที
+makeImmortal()
+print("สคริปต์เกราะแดงอมตะทำงานแล้ว!")
