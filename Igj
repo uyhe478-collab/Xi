@@ -1,0 +1,75 @@
+-- [[ BB GUN BREAK & SUPREME SKIN ]] --
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local backpack = player:WaitForChild("Backpack")
+
+-- 1. ฟังก์ชันสร้างโมเดลปืน (เสกปืนเข้าตัว)
+local function spawnBBGun()
+    -- ตรวจสอบว่ามีปืนอยู่แล้วหรือยัง
+    if backpack:FindFirstChild("BBGun_Break") or character:FindFirstChild("BBGun_Break") then
+        print("คุณมีปืนอยู่แล้ว!")
+        return
+    end
+
+    local tool = Instance.new("Tool")
+    tool.Name = "BBGun_Break"
+    tool.RequiresHandle = true
+    
+    local handle = Instance.new("Part")
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(0.5, 1.2, 2) -- ทรงปืนพก
+    handle.Color = Color3.fromRGB(20, 20, 20) -- สีดำสนิท
+    handle.Material = Enum.Material.Metal
+    handle.Parent = tool
+    
+    -- เพิ่มสกินปืน (เส้นแสงสีแดง)
+    local skin = Instance.new("SelectionBox", handle)
+    skin.Adornee = handle
+    skin.Color3 = Color3.fromRGB(255, 0, 0)
+    skin.LineThickness = 0.04
+
+    tool.Parent = backpack
+    print("เสกปืน BB Gun Break เรียบร้อย!")
+end
+
+-- 2. ระบบการยิงแบบ Break (ใช้ร่วมกับปุ่มที่คุณมี)
+-- โค้ดส่วนนี้จะทำงานเมื่อคุณถือปืน BBGun_Break แล้วคลิกเมาส์
+local mouse = player:GetMouse()
+mouse.Button1Down:Connect(function()
+    local tool = character:FindFirstChild("BBGun_Break")
+    if tool and tool:IsA("Tool") then
+        local target = mouse.Target
+        if target and target.Parent:FindFirstChild("Humanoid") then
+            local targetHum = target.Parent.Humanoid
+            local targetPart = target.Parent:FindFirstChild("HumanoidRootPart")
+            
+            -- สร้าง Effect กระสุนสีแดง
+            local beam = Instance.new("Part", workspace)
+            beam.Anchored = true
+            beam.CanCollide = false
+            beam.Material = Enum.Material.Neon
+            beam.Color = Color3.fromRGB(255, 0, 0)
+            local dist = (tool.Handle.Position - mouse.Hit.p).Magnitude
+            beam.Size = Vector3.new(0.2, 0.2, dist)
+            beam.CFrame = CFrame.new(tool.Handle.Position, mouse.Hit.p) * CFrame.new(0, 0, -dist/2)
+            game.Debris:AddItem(beam, 0.1)
+
+            -- ระบบ BREAK: ทำให้ศัตรูขยับไม่ได้หรือล้มลง
+            if targetPart then
+                targetHum.PlatformStand = true -- ทำให้ล้มขยับไม่ได้
+                local bv = Instance.new("BodyVelocity", targetPart)
+                bv.Velocity = (targetPart.Position - character.HumanoidRootPart.Position).Unit * 50 -- กระเด็นถอยหลัง
+                bv.MaxForce = Vector3.new(1, 1, 1) * 100000
+                game.Debris:AddItem(bv, 0.5)
+                
+                -- ถ้าต้องการชุบ (Heal) ก็กดปุ่ม Mode ที่ GUI เดิมได้เลย
+                -- แต่ถ้าจะ Break คือล็อคให้นิ่ง 2 วินาที
+                task.wait(2)
+                targetHum.PlatformStand = false
+            end
+        end
+    end
+end)
+
+-- รันคำสั่งเสกปืนทันที
+spawnBBGun()
