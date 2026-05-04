@@ -1,0 +1,107 @@
+-- [[ BB GUN SUPREME MULTI-TOOL ]] --
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local screenGui = Instance.new("ScreenGui", player.PlayerGui)
+screenGui.Name = "BBGunControl"
+
+local active = true
+local mode = "Heal" -- เริ่มต้นที่โหมดชุบชีวิต
+
+-- 1. สร้าง UI ปุ่มเปิด-ปิด และสลับโหมด
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0, 150, 0, 100)
+mainFrame.Position = UDim2.new(0.85, 0, 0.4, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.BorderSizePixel = 2
+
+local toggleBtn = Instance.new("TextButton", mainFrame)
+toggleBtn.Size = UDim2.new(1, 0, 0.5, 0)
+toggleBtn.Text = "STATUS: ON"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+
+local modeBtn = Instance.new("TextButton", mainFrame)
+modeBtn.Size = UDim2.new(1, 0, 0.5, 0)
+modeBtn.Position = UDim2.new(0, 0, 0.5, 0)
+modeBtn.Text = "MODE: HEAL"
+modeBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
+
+-- ฟังก์ชันสลับ เปิด/ปิด
+toggleBtn.MouseButton1Click:Connect(function()
+    active = not active
+    toggleBtn.Text = active and "STATUS: ON" or "STATUS: OFF"
+    toggleBtn.BackgroundColor3 = active and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
+end)
+
+-- ฟังก์ชันสลับโหมด
+modeBtn.MouseButton1Click:Connect(function()
+    if mode == "Heal" then
+        mode = "Suck"
+        modeBtn.Text = "MODE: SUCK (KILL)"
+        modeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    else
+        mode = "Heal"
+        modeBtn.Text = "MODE: HEAL"
+        modeBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
+    end
+end)
+
+-- 2. ฟังก์ชันตกแต่งสกินปืน (BB Gun Skin)
+local function applyGunSkin(tool)
+    if tool:FindFirstChild("Handle") then
+        tool.Handle.Color = Color3.fromRGB(30, 30, 30) -- สีดำด้าน
+        tool.Handle.Material = Enum.Material.Metal
+        
+        -- เพิ่มแถบสีแดงคาดปืนให้ดูดุ
+        if not tool.Handle:FindFirstChild("SkinEffect") then
+            local p = Instance.new("SelectionBox", tool.Handle)
+            p.Name = "SkinEffect"
+            p.Adornee = tool.Handle
+            p.Color3 = Color3.fromRGB(255, 0, 0)
+            p.LineThickness = 0.05
+        end
+    end
+end
+
+-- 3. ระบบยิง (Effect + Logic)
+mouse.Button1Down:Connect(function()
+    if not active then return end
+    
+    local tool = player.Character:FindFirstChildOfClass("Tool")
+    if not tool then return end
+    applyGunSkin(tool)
+
+    local target = mouse.Target
+    if target and target.Parent:FindFirstChild("Humanoid") then
+        local targetHum = target.Parent.Humanoid
+        local startPos = tool.Handle.Position
+        local endPos = mouse.Hit.p
+        
+        -- สร้าง Tracer
+        local beam = Instance.new("Part", workspace)
+        beam.Anchored = true
+        beam.CanCollide = false
+        beam.Material = Enum.Material.Neon
+        beam.Size = Vector3.new(0.2, 0.2, (startPos - endPos).Magnitude)
+        beam.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0, 0, -beam.Size.Z/2)
+        
+        if mode == "Heal" then
+            -- โหมดชุบชีวิต: แสงสีเขียว + เสกเข็ม
+            beam.Color = Color3.fromRGB(0, 255, 0)
+            targetHum.Health = targetHum.MaxHealth
+            
+            -- เสกเข็มฉีดยา (Syringe Visual)
+            local needle = Instance.new("Part", target.Parent)
+            needle.Size = Vector3.new(0.2, 1, 0.2)
+            needle.Color = Color3.fromRGB(200, 200, 200)
+            needle.CFrame = target.CFrame * CFrame.Angles(math.rad(90), 0, 0)
+            Instance.new("WeldConstraint", needle).Part0 = target
+            game.Debris:AddItem(needle, 0.5)
+        else
+            -- โหมดสูบเลือด: แสงสีแดงเลือด
+            beam.Color = Color3.fromRGB(150, 0, 0)
+            targetHum.Health = 0 -- หรือจะปรับเป็น targetHum:TakeDamage(50) ก็ได้
+        end
+        
+        game.Debris:AddItem(beam, 0.1)
+    end
+end)
