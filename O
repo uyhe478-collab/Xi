@@ -1,0 +1,81 @@
+-- [[ RED IMMORTAL SCRIPT FIXED ]] --
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local mouse = player:GetMouse()
+local runService = game:GetService("RunService")
+
+-- 1. ระบบอมตะ (God Mode) แบบล็อคค่า Health
+local function applyGodMode()
+    local hum = character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        -- ล็อคเลือดขั้นสุด
+        hum.MaxHealth = math.huge
+        hum.Health = math.huge
+        
+        -- ป้องกันเลือดลดจากการโดนดาเมจต่อเนื่อง (Loop ล็อค)
+        runService.RenderStepped:Connect(function()
+            if hum.Health ~= math.huge then
+                hum.Health = math.huge
+            end
+        end)
+    end
+end
+
+-- 2. สร้างเกราะออร่าสีแดง (Red Aura Shield)
+local function createRedShield()
+    -- ลบอันเก่าถ้ามี
+    if character:FindFirstChild("RedShield") then character.RedShield:Dispose() end
+
+    local shield = Instance.new("Part")
+    shield.Name = "RedShield"
+    shield.Shape = Enum.PartType.Ball
+    shield.Size = Vector3.new(6, 6, 6) -- ขนาดครอบตัว
+    shield.Color = Color3.fromRGB(255, 0, 0)
+    shield.Material = Enum.Material.ForceField -- ใช้ Material นี้จะดูเหมือนโล่พลังงาน
+    shield.Transparency = 0.5
+    shield.CanCollide = false
+    shield.Massless = true
+    shield.Parent = character
+
+    -- เชื่อมโล่ให้ติดกับตัว (HumanoidRootPart)
+    local weld = Instance.new("Weld")
+    weld.Part0 = character:WaitForChild("HumanoidRootPart")
+    weld.Part1 = shield
+    weld.Parent = shield
+end
+
+-- 3. ระบบยิงแสงสีแดง (ปรับปรุงให้ไม่พังถ้าไม่มี Handle)
+mouse.Button1Down:Connect(function()
+    local tool = character:FindFirstChildOfClass("Tool")
+    if tool and tool:FindFirstChild("Handle") then
+        local startPos = tool.Handle.Position
+        local endPos = mouse.Hit.p
+        local distance = (startPos - endPos).Magnitude
+        
+        local beam = Instance.new("Part")
+        beam.Name = "RedLaser"
+        beam.Color = Color3.fromRGB(255, 0, 0)
+        beam.Material = Enum.Material.Neon
+        beam.Anchored = true
+        beam.CanCollide = false
+        beam.Size = Vector3.new(0.3, 0.3, distance)
+        beam.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0, 0, -distance/2)
+        beam.Parent = workspace
+        
+        game.Debris:AddItem(beam, 0.1)
+    end
+end)
+
+-- รันฟังก์ชัน
+applyGodMode()
+createRedShield()
+
+-- กรณีตัวละครตายแล้วเกิดใหม่ (Reset) ให้รันสคริปต์ใหม่
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    wait(1) -- รอตัวละครโหลดแป๊บหนึ่ง
+    applyGodMode()
+    createRedShield()
+end)
+
+print("Red Immortal Script: ทำงานเต็มระบบ (อมตะ + โล่แดง)!")
